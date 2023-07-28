@@ -1,0 +1,117 @@
+        addi sp, x0, 0x100
+        slli sp, sp, 8 ; postavljanje stoga
+
+        lui s1, %hi(0xFFFF0F00) 
+        addi s1, s1, %lo(0xFFFF0F00) ; u s1 stavljamo adresu GPIO 
+        ; posto je na vratima B ne diramo smjer 
+
+        addi s2, x0, 0x500
+
+        lw a0, 0(s2) 
+
+        jal ra, PRETVORI        
+        halt
+
+PRETVORI 
+        ; spremi kontekst i ra jer iz potprograma pozivamo potprogram
+        addi sp, sp, -4
+        sw ra, 0(sp)
+        addi sp, sp, -4
+        sw t0, 0(sp)
+
+        addi a1, x0, 0x0D
+        jal ra, lcdwr ; upisi razmake u ulazne registre       
+sto
+        addi t0, x0, 100 
+        blt a0, t0, desetsto 
+        addi a0, a0, -100 ;oduzmi za toliko
+        addi a1, x0, 0x43
+        jal ra, lcdwr ; pazi - lcdwr uzima a1 
+desetsto ; devedeset ne stane kao labela pa kao fora zbog XC
+        addi t0, x0, 90 
+        blt a0, t0, pedeset 
+        addi a0, a0, -90 
+        addi a1, x0, 0x58 
+        jal ra, lcdwr
+        addi a1, x0, 0x43
+        jal ra, lcdwr 
+pedeset 
+        addi t0, x0, 50 
+        blt a0, t0, forty
+        addi a0, a0, -50 
+        addi a1, x0, 0x4C 
+        jal ra, lcdwr
+forty 
+        addi t0, x0, 40 
+        blt a0, t0, deset 
+        addi a0, a0, -40 
+        addi a1, x0, 0x58 
+        jal ra, lcdwr
+        addi a1, x0, 0x4C
+        jal ra, lcdwr 
+deset 
+        addi t0, x0, 10 
+        blt a0, t0, devet
+        addi a0, a0, -10 
+        addi a1, x0, 0x58 
+        jal ra, lcdwr
+        bge a0, t0, deset ; desetke i jedinice se znaju spammat vise puta
+devet 
+        addi t0, x0, 9 
+        blt a0, t0, pet 
+        addi a0, a0, -9 
+        addi a1, x0, 0x49
+        jal ra, lcdwr
+        addi a1, x0, 0x58
+        jal ra, lcdwr
+pet 
+        addi t0, x0, 5 
+        blt a0, t0, cetiri
+        addi a0, a0, -5 
+        addi a1, x0, 0x56
+        jal ra, lcdwr 
+cetiri 
+        addi t0, x0, 4 
+        blt a0, t0, jedan 
+        addi a0, a0, -4 
+        addi a1, x0, 0x49
+        jal ra, lcdwr
+        addi a1, x0, 0x56
+        jal ra, lcdwr
+jedan
+        addi t0, x0, 1 
+        blt a0, t0, kraj
+        addi a0, a0, -1 
+        addi a1, x0, 0x49 
+        jal ra, lcdwr
+        bge a0, t0, jedan ; desetke i jedinice se znaju spammat vise puta
+kraj 
+
+        addi a1, x0, 0x0A
+        jal ra, lcdwr ; kopiraj ulazne registre u prikazne registre 
+        
+        lw t0, 0(sp) 
+        addi sp, sp, 4
+        lw ra, 0(sp) 
+        addi sp, sp, 4
+        jalr x0, 0(ra) 
+        
+lcdwr ; klasicni copy paste iz prezentacije, samo a0 postaje a1 
+        andi t1,a1,0x7F
+        sw t1, 4(s1) 
+        ori t1,a1,0x80
+        sw t1, 4(s1) 
+        andi t1,a1,0x7F
+        sw t1, 4(s1) 
+        jalr x0, 0(ra)
+
+
+         
+        
+        
+         
+
+        
+
+        
+        

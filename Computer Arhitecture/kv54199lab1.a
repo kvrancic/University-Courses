@@ -1,0 +1,97 @@
+        MOV R5, #0x500 ;adresa citanja
+        MOV R4, #0x1000 ;adresa pisanja
+        MOV SP, #0x8000
+petlja  
+        LDR R1, [R5], #4 ;učitaj podatke strukture
+        LDR R11, kraj_cit ; naknadno dodajem zaato visoki broj registra
+        CMP R1, R11 ; vidi jesmo li došli do kraja
+        BEQ kraj_p
+        LDR R2, [R5], #4 
+        LDR R3, [R5], #4
+
+        ; sada trebamo provjeriti koji je broj unesen u R1 
+        CMP R1, #0
+        BEQ zbroji
+        CMP R1, #1
+        BEQ oduzmi
+        CMP R1, #2
+        BEQ mnozi
+        CMP R1, #3
+        STMFD SP!, {R2,R3} 
+        ; jasno mi je da je ovo ekvivalent pushanja na stack, ali zasto assembler ne prepoznaje naredbu PUSH?
+        ; svi online resursi koriste PUSH/POP sintaksu        
+        BLEQ dijeli
+        ADD SP, SP, #8
+        
+        
+        
+upis    ;nakon dovršene radnje upisujemo sadržaj R0 na adresu citanja 
+        STR R0, [R4], #4
+        
+        B petlja
+
+kraj_p
+        LDR R6, kraj_pis    
+        STR R6, [R4]
+        SWI 0x123456
+
+zbroji 
+        ADD R0, R2, R3 
+        B upis
+
+oduzmi 
+        SUB R0, R2, R3
+        B upis
+
+mnozi 
+        MUL R0, R2, R3
+        B upis
+
+dijeli 
+        STMFD SP!, {R1, R2, R3, R4} ; kontekst (kao smanjenje scopea u višim jezicima kako bi mogli ponavljati varijable)
+        LDR R1, [SP, #16] ; ovo su R2 i R3 iz glavne funkcije
+        LDR R2, [SP, #20] ; broj koji dodajemo SP-u ovisi o količini stvari koje smo u međuvremenu dodali od pushanja parametra na stog
+        MOV R3, #0;  rezultat
+        MOV R4, #0; za 0 rezultat +, za 1 rezultat - 
+        
+        ; moram testirati hoce li rezultat biti negativan ili pozitivan -> najlakse preko zastavica 
+      
+        ADDS R1, R1, #0
+        MVNMI R1, R1 ; ako je negativan pretvori u pozitivan 
+        ADDMI R1, R1, #1
+        ADDMI R4, R4, #1
+
+        ADDS R2, R2, #0 
+        MVNMI R2, R2    ; ako je negativan pretvori u pozitivan
+        ADDMI R2, R2, #1
+        EORMI R4, R4, #1 ; ako su oba negativni bit ce 0    
+        
+        CMP R2, #0 
+        MOVEQ R0, #0
+        BEQ kraj_d; 
+
+petlja_d
+        SUBS R1, R1, R2
+        ADD R3, R3, #1
+        BPL petlja_d
+        
+        SUB R3, R3, #1 ; jer će rezultat uvijek biti za jedan veći 
+
+        CMP R4, #1 ; test je li broj negativan
+        MVNEQ R3, R3 
+        ADDEQ R3, R3, #1
+        
+        MOV R0, R3 ; stavi povratnu vrijednost u R0
+        
+kraj_d
+        LDMFD SP!, {R1, R2, R3, R4} ; obnovi kontekst
+        MOV PC, LR
+        
+kraj_cit dw 0x80808080
+kraj_pis dw 0xffffffff
+                
+       ; org 0x500 
+       ; testni ulazi... 
+        
+       
+
